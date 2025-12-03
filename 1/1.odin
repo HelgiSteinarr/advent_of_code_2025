@@ -1,4 +1,4 @@
-package no1_1
+package no1
 
 import "core:os"
 import "core:fmt"
@@ -18,7 +18,6 @@ main :: proc() {
             if a == "2" do n2 = true
         }
     }
-
     no1(file, part2=n2)
 }
 

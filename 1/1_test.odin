@@ -1,4 +1,4 @@
-package no1_1 
+package no1 
 
 import "core:testing"
 
