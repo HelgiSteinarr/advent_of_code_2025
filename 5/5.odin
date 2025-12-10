@@ -4,16 +4,19 @@ import "core:strings"
 import "core:os"
 import "core:strconv"
 import "core:fmt"
+import "core:sort"
+
 
 main :: proc() {
-	part1_ver2("input.txt")
+	part1("input.txt")
 }
 
+// 520
 part1 :: proc(filename: string) -> int{
 	data, ok := os.read_entire_file(fmt.tprintf("5/%s", filename), context.temp_allocator)
     if !ok do return fmt.println("failed to read file")
 
-	ranges: [dynamic]string
+	ranges: [dynamic][2]int
 	total := 0
 
 	range_part := true
@@ -24,61 +27,52 @@ part1 :: proc(filename: string) -> int{
 			continue
 		}
 		if range_part {
-			fmt.println("range part if")
-			append(&ranges, line)
+			lo, _ := strconv.parse_int(line_split[0])
+			hi, _ := strconv.parse_int(line_split[1])
+			range := [2]int{lo, hi}
+			append(&ranges, range)
 			continue
+		}else {
+			if is_fresh(line, ranges) do total += 1
+
 		}
 
-		if is_fresh(line, &ranges) do total += 1
 	}
+
 	fmt.println(total)
+	fmt.println(part2(ranges))
 	return total
 }
 
-// PLAN FOR TOMORROW (solve this faster, so the code actually finishes to run)
-// ranges [[3,5][10,14][16,20]]
-// points [1,5,8,11,17,32]
-// convert points to [[p,p] for p in points]
-// intervals = ranges + points
-// merged = []
-// for (a,b) in intervals-sorted
-//	if merged empty do append [a,b]
-//  else
-//  	ax bx = merged[-2:]
-//		if a <= bx + 1 - touching 
-// 			merged[-2:] = [ax, max(bx, b)]
-//      else
-//          merged append [a,b]
-//
-// spoiled = []
-// for i in 0..len merged -2
-// 	last end = merged[i][-1]
-//  next start = merged[i+1][0]
-//  if last end + 1 <= next start -1
-//	   append spoiled [last end + 1, next start -1]
+// 347338785050515
+part2 :: proc(ranges: [dynamic][2]int) -> int{
+	merged := merge(ranges)
+	total := 0
+	for range in merged do total += range[1] - range[0] + 1
+	return total
+}
 
-
-
-
-// str_to_arr :: proc(str: []string) -> [dynamic]int {
-// 	low, _ := strconv.parse_int(str[0], 10)
-// 	high, _ := strconv.parse_int(str[1], 10)
-// 	arr: [dynamic]int
-// 	for ; low <= high; low += 1 {
-// 		append(&arr, low)
-// 	} 
-// 	return arr
-// }
-
-is_fresh :: proc(id: string, ranges: ^[dynamic]string) -> bool {
-	id_int, _ := strconv.parse_int(id, 10)
-	for range in ranges^{
-		range_split := strings.split(range, "-")
-		low, _ := strconv.parse_int(range_split[0], 10)
-		high, _ := strconv.parse_int(range_split[1], 10)
-		for ; low <= high; low += 1 {
-			if id_int == low do return true
-		}
-	}
+is_fresh :: proc(line: string, ranges: [dynamic][2]int) -> bool {
+	id, _ := strconv.parse_int(line)
+	for range in ranges do if range[0] <= id && id <= range[1] do return true
 	return false
+}
+
+merge :: proc(ranges: [dynamic][2]int) -> [dynamic][2]int{
+	sort.quick_sort_proc(ranges[:], proc(a, b: [2]int) -> int {
+		if a[0] < b[0] do return -1
+		if a[0] > b[0] do return 1
+		return 0
+	})
+	merged := [dynamic][2]int{}
+	for range in ranges {
+		if len(merged) == 0 {
+			append(&merged, range)
+			continue 
+		}
+		last := &merged[len(merged)-1]
+		if range[0] <= last[1] + 1 do last[1] = max(last[1], range[1])
+		else do append(&merged, range)
+	}
+	return merged
 }
